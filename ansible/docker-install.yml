@@ -1,0 +1,47 @@
+---
+- name: Ensure Docker Engine is installed and running (Raspberry Pi OS / Debian)
+  hosts: pis
+  become: true
+  gather_facts: true
+
+  vars:
+    docker_packages:
+      - docker.io
+      - docker-compose-plugin
+
+  tasks:
+    - name: Check if docker is installed
+      ansible.builtin.command: docker --version
+      become: false
+      changed_when: false
+      failed_when: false
+      register: docker_check
+
+    - name: Update apt package index (only if docker missing)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: docker_check.rc != 0
+
+    - name: Install Docker packages (only if docker missing)
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+      when: docker_check.rc != 0
+
+    - name: Ensure Docker service is enabled and started
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Ensure SSH user is in docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
+
+    - name: Verify docker works (non-sudo)
+      ansible.builtin.command: docker ps
+      become: false
+      changed_when: false
