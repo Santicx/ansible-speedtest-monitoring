@@ -1,0 +1,2 @@
+# Local Ansible inventory (contains real IPs / users)
+ansible/inventory.ini
