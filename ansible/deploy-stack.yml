@@ -1,0 +1,32 @@
+---
+- name: Deploy internet monitoring stack (Docker Compose)
+  hosts: pis
+  become: true
+  gather_facts: true
+
+  vars:
+    project_dir: /opt/internet-monitoring
+
+  tasks:
+    - name: Ensure project directory exists
+      ansible.builtin.file:
+        path: "{{ project_dir }}"
+        state: directory
+        mode: "0700"
+
+    - name: Copy stack files to host
+      ansible.builtin.copy:
+        src: "../stack/"
+        dest: "{{ project_dir }}/"
+        mode: preserve
+
+    - name: Start/Update stack with docker compose
+      ansible.builtin.command: docker compose up -d
+      args:
+        chdir: "{{ project_dir }}"
+      changed_when: false
+
+    - name: Verify containers are running
+      ansible.builtin.command: docker ps
+      become: false
+      changed_when: false
